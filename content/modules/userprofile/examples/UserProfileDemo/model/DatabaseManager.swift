@@ -30,9 +30,10 @@ class DatabaseManager {
     public fileprivate(set) var currentUserCredentials:(user:String,password:String)?
     
     var lastError:Error?
+    var counter:Int = 0
 
     // db name
-    fileprivate let kDBName:String = "userprofile"
+    fileprivate let kDBName:String = "master"
     fileprivate let kUniversityDBName:String = "universities"
     fileprivate let kPrebuiltDBFolder:String = "prebuilt"
     
@@ -43,7 +44,7 @@ class DatabaseManager {
     // tag:replicationdefs
     fileprivate var _pushPullRepl:Replicator?
     fileprivate var _pushPullReplListener:ListenerToken?
-    fileprivate var kRemoteSyncUrl = "ws://localhost:4984" // <1>
+    fileprivate var kRemoteSyncUrl = "wss://sgw.dev-rogue.skechers.aptos-labs.io" // <1>
     // end:replicationdefs
     
     fileprivate var _applicationDocumentDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).last
@@ -158,9 +159,9 @@ extension DatabaseManager {
                     if doc == nil {
                         print("Document was deleted")
                     }
-                    else {
-                        print("Document was added/updated")
-                    }
+//                    else {
+//                        print("Document was added/updated")
+//                    }
                 }
             }
         })
@@ -298,15 +299,15 @@ extension DatabaseManager {
         let dbUrl = remoteUrl.appendingPathComponent(kDBName)
         let config = ReplicatorConfiguration.init(database: db, target: URLEndpoint.init(url:dbUrl)) //<1>
         
-        config.replicatorType = .pushAndPull // <2>
+        config.replicatorType = .pull // <2>
         config.continuous =  true // <3>
-        config.authenticator =  BasicAuthenticator(username: user, password: password) // <4>
+        config.authenticator =  BasicAuthenticator(username: "skechers_167.109999.store-selling", password: "539fb57a-33a6-4325-b97a-27a416b0aa7a") // <4>
         
         
         // This should match what is specified in the sync gateway config
         // Only pull documents from this user's channel
-        let userChannel = "channel.\(user)"
-        config.channels = [userChannel] // <5>
+        // let userChannel = "channel.\(user)"
+        // config.channels = [userChannel] // <5>
         
         //end::replicationconfig[]
         
@@ -319,7 +320,12 @@ extension DatabaseManager {
             let s = change.status
             switch s.activity {
             case .busy:
-                print("Busy transferring data")
+//                 print("Busy transferring data")
+                if ((self.counter % 100) == 0) {
+                    print("\(NSDate().timeIntervalSince1970) Busy transferring data")
+                }
+                self.counter += 1
+                break
             case .connecting:
                 print("Connecting to Sync Gateway")
             case .idle:
@@ -333,10 +339,11 @@ extension DatabaseManager {
             // Workarond for BUG :https://github.com/couchbase/couchbase-lite-ios/issues/1816.
             if s.progress.completed == s.progress.total {
                 print("All documents synced")
+                print(db.count);
             }
-            else {
-                 print("Documents \(s.progress.total - s.progress.completed) still pending sync")
-            }
+//            else {
+//                 print("Documents \(s.progress.total - s.progress.completed) still pending sync")
+//            }
         })
         //end::replicationlistener[]
         
@@ -367,7 +374,17 @@ extension DatabaseManager {
 extension DatabaseManager {
     
     fileprivate func enableCrazyLevelLogging() {
-        Database.setLogLevel(.debug, domain: .all)
+        let documentsPath = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] + "/cbl_logs"
+
+        // Database.setLogLevel(.debug, domain: .all)
+        Database.log.console.level = .warning
+//        Database.log.console.domains = .database
+        
+        let fileConfig = LogFileConfiguration(directory: documentsPath)
+        fileConfig.maxSize = 100000000;
+        fileConfig.maxRotateCount = 20;
+        Database.log.file.config = fileConfig
+        Database.log.file.level = .debug
     }
     
 }
