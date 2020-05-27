@@ -31,6 +31,7 @@ class DatabaseManager {
     
     var lastError:Error?
     var counter:Int = 0
+    var replicationStatus:String = "unknown"
 
     // db name
     fileprivate let kDBName:String = "master"
@@ -325,15 +326,19 @@ extension DatabaseManager {
                     print("\(NSDate().timeIntervalSince1970) Busy transferring data")
                 }
                 self.counter += 1
-                break
+                self.replicationStatus = "busy \(self.counter)"
             case .connecting:
                 print("Connecting to Sync Gateway")
+                self.replicationStatus = "connecting"
             case .idle:
                 print("Replicator in Idle state")
+                self.replicationStatus = "idle"
             case .offline:
                 print("Replicator in offline state")
+                self.replicationStatus = "offline"
             case .stopped:
                 print("Completed syncing documents")
+                self.replicationStatus = "stopped"
             }
           
             // Workarond for BUG :https://github.com/couchbase/couchbase-lite-ios/issues/1816.

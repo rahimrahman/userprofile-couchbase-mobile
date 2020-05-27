@@ -15,6 +15,7 @@ class ProfileTableViewController:UITableViewController, UserPresentingViewProtoc
     @IBOutlet weak var doneButton: UIBarButtonItem!
     
     fileprivate var record:UserRecord?
+    fileprivate var dbMgr:DatabaseManager = DatabaseManager.shared
     
     lazy var userPresenter:UserPresenter = UserPresenter()
     
@@ -25,7 +26,8 @@ class ProfileTableViewController:UITableViewController, UserPresentingViewProtoc
     fileprivate var imageUpdated:Bool = false
     fileprivate var universityLabel:UILabel?
     fileprivate var selectedUniversity:String?
-    
+    private var replicationStatus:String? = "unknown"
+
     let  baselineProfileSections:Int = 3
     
     enum Section {
@@ -137,8 +139,10 @@ class ProfileTableViewController:UITableViewController, UserPresentingViewProtoc
         self.userPresenter.detachPresentingView(self)
 
     }
-    
-   
+        
+    @IBAction func onDoneTppd(_ sender: UIBarButtonItem) {
+        self.showAlertWithTitle("", message: "\(self.dbMgr.replicationStatus)")
+    }
 }
 
 // MARK: IBActions
@@ -166,7 +170,7 @@ extension ProfileTableViewController {
                 self.showAlertWithTitle(NSLocalizedString("Error!", comment: ""), message: (error?.localizedDescription) ?? "Failed to update user record")
             }
             else {
-                 self.showAlertWithTitle("", message: "Succesfully updated profile!")
+                 self.showAlertWithTitle("", message: "Succesfully updated profile! \(self.replicationStatus)")
             }
         }
     }
@@ -396,7 +400,6 @@ extension ProfileTableViewController {
         tableView.reloadRows(at: [IndexPath.init(row: BasicRows.university.index, section: Section.basic.index)], with: .automatic)
         self.doneButton.isEnabled = true
     }
-    
 }
 
 // MARK : CustomImageEntryTableViewCellProtocol
